@@ -1,0 +1,45 @@
+name: banking-u2
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: banking_system
+      POSTGRES_USER: banking
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Ejecute primero scripts/Preparar.ps1}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      # ================ Aqui se aplico Durabilidad: datos fuera del contenedor ================
+      - banking_data:/var/lib/postgresql
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banking -d banking_system"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  external-service:
+    image: banking-u2-external-service:local
+    build:
+      context: .
+      args:
+        PROJECT: ExternalService
+    restart: unless-stopped
+  app:
+    image: banking-u2-app:local
+    build:
+      context: .
+      args:
+        PROJECT: BankingApp
+    ports:
+      - "127.0.0.1:${APP_PORT:-5080}:8080"
+    environment:
+      ConnectionStrings__Banking: Host=postgres;Database=banking_system;Username=banking;Password=${POSTGRES_PASSWORD}
+      ExternalServiceUrl: http://external-service:8080/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      external-service:
+        condition: service_started
+    restart: unless-stopped
+volumes:
+  banking_data:

@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/BankingApp/BankingApp.csproj" />
+    <Project Path="src/ExternalService/ExternalService.csproj" />
+  </Folder>
+</Solution>
